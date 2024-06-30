@@ -39,11 +39,13 @@ class CoCreateUrlUploader {
             const response = await fetch(file.src);
 
             if (!response.ok) {
-                throw new Error('Failed to fetch file: ' + response.statusText);
+                data.error = 'Failed to fetch file: ' + response.statusText
+                if (data.socket)
+                    return this.crud.wsManager.send(data)
             }
 
             const arrayBuffer = await response.arrayBuffer();
-            file.src = arrayBufferToBase64(arrayBuffer)
+            file.src = this.arrayBufferToBase64(arrayBuffer)
 
             file.size = arrayBuffer.byteLength
             file['content-type'] = response.headers.get('content-type')
