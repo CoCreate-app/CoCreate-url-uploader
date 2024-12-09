@@ -20,70 +20,65 @@
 // you must obtain a commercial license from CoCreate LLC.
 // For details, visit <https://cocreate.app/licenses/> or contact us at sales@cocreate.app.
 
-
-const { URL } = require('url');
+const { URL } = require("url");
 
 class CoCreateUrlUploader {
-    constructor(crud) {
-        this.crud = crud
-        crud.wsManager.on('importUrl', async (data) => {
-            this.fetchFileFromURL(data)
-        });
-    }
+	constructor(crud) {
+		this.crud = crud;
+		crud.wsManager.on("importUrl", async (data) => {
+			this.fetchFileFromURL(data);
+		});
+	}
 
+	async fetchFileFromURL(data) {
+		try {
+			const file = data.file;
+			const fetch = await import("node-fetch").then(
+				(module) => module.default
+			);
+			const response = await fetch(file.src);
 
-    async fetchFileFromURL(data) {
-        try {
-            const file = data.file
-            const fetch = await import('node-fetch').then(module => module.default);
-            const response = await fetch(file.src);
+			if (!response.ok) {
+				data.error = "Failed to fetch file: " + response.statusText;
+				if (data.socket) return this.crud.wsManager.send(data);
+			}
 
-            if (!response.ok) {
-                data.error = 'Failed to fetch file: ' + response.statusText
-                if (data.socket)
-                    return this.crud.wsManager.send(data)
-            }
+			const arrayBuffer = await response.arrayBuffer();
+			file.src = this.arrayBufferToBase64(arrayBuffer);
 
-            const arrayBuffer = await response.arrayBuffer();
-            file.src = this.arrayBufferToBase64(arrayBuffer)
+			file.size = arrayBuffer.byteLength;
+			file["content-type"] = response.headers.get("content-type");
 
-            file.size = arrayBuffer.byteLength
-            file['content-type'] = response.headers.get('content-type')
+			if (!file.name) {
+				const parsedUrl = new URL(file.src);
+				file.name = parsedUrl.pathname.split("/").pop();
+			}
 
-            if (!file.name) {
-                const parsedUrl = new URL(file.src);
-                file.name = parsedUrl.pathname.split('/').pop();
-            }
+			if (!file.directory) file.directory = "/";
+			if (!file.path) file.path = file.directory;
+			if (!file.pathname) {
+				if (file.path.endsWith("/"))
+					file.pathname = file.path + file.name;
+				else file.pathname = file.path + "/" + file.name;
+			}
+			if (data.socket) this.crud.wsManager.send(data);
 
-            if (!file.directory)
-                file.directory = '/'
-            if (!file.path)
-                file.path = file.directory
-            if (!file.pathname) {
-                if (file.path.endsWith('/'))
-                    file.pathname = file.path + file.name
-                else
-                    file.pathname = file.path + '/' + file.name
-            }
-            if (data.socket)
-                this.crud.wsManager.send(data)
+			// return data;
+		} catch (error) {
+			console.error("Error fetching file:", error);
+			throw error;
+		}
+	}
 
-            // return data;
-        } catch (error) {
-            console.error('Error fetching file:', error);
-            throw error;
-        }
-    }
-
-    arrayBufferToBase64(buffer) {
-        let binary = '';
-        const bytes = new Uint8Array(buffer);
-        const len = bytes.byteLength;
-        for (let i = 0; i < len; i++) {
-            binary += String.fromCharCode(bytes[i]);
-        }
-        return Buffer.from(binary, 'binary').toString('base64');
-    }
+	arrayBufferToBase64(buffer) {
+		let binary = "";
+		const bytes = new Uint8Array(buffer);
+		const len = bytes.byteLength;
+		for (let i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return Buffer.from(binary, "binary").toString("base64");
+	}
 }
 
 module.exports = CoCreateUrlUploader;
