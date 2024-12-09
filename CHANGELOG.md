@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/CoCreate-app/CoCreate-url-uploader/compare/v1.1.0...v1.1.1) (2024-12-09)
+
+
+### Bug Fixes
+
+* formating ([ee217a5](https://github.com/CoCreate-app/CoCreate-url-uploader/commit/ee217a53c372a2c85e084d4d100142b12ab90ea1))
+
 # [1.1.0](https://github.com/CoCreate-app/CoCreate-url-uploader/compare/v1.0.1...v1.1.0) (2024-11-04)
 
 
